@@ -16,7 +16,6 @@ class Gemma4RulesModel(RulesModel):
         self.weights_dir = model_weights_dir
 
     def init(self):
-        # f"google/gemma-4/transformers/{self.model_name}"
         model_path = self.weights_dir
         if not Path(model_path).exists() or not any(Path(model_path).iterdir()):
             download_weights_s3('gemma4', self.variant, self.weights_dir)
@@ -42,25 +41,23 @@ class Gemma4RulesModel(RulesModel):
         self.model.generate(**inputs, max_new_tokens=1024)
         logger.info("Warm up complete")
 
-    def evaluate_rules(self, rules: list[RuleEvaluationInput], image: Image.Image) -> list[RuleEvaluationResult]:
-        # Example
-        # User enters: Notify me if: a cat is eating.
-        # Rule: a cat is eating.
-        rule_messages = [
+    def _build_rule_messages(self, rules: list[RuleEvaluationInput]) -> list[dict]:
+        messages = [
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "system", "content": "Answer questions with yes or no"},
         ]
         for rule in rules:
-            rule_messages.append(
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "image"},
-                        {"type": "text", "text": f"is {rule.rule}?"},
-                    ],
-                }
-            )
+            messages.append({
+                "role": "user",
+                "content": [
+                    {"type": "image"},
+                    {"type": "text", "text": f"is {rule.rule}?"},
+                ],
+            })
+        return messages
 
+    def evaluate_rules(self, rules: list[RuleEvaluationInput], image: Image.Image) -> list[RuleEvaluationResult]:
+        rule_messages = self._build_rule_messages(rules)
         rule_text = self.processor.apply_chat_template(
             rule_messages,
             tokenize=False,
@@ -72,10 +69,5 @@ class Gemma4RulesModel(RulesModel):
         outputs = self.model.generate(**inputs, max_new_tokens=1024)
         response = self.processor.decode(outputs[0][input_len:], skip_special_tokens=False)
         response = self.processor.parse_response(response)['content'].lower()
-        print(f'Response: {response}')
         logger.debug(f'Response: {response}')
         return []
-
-
-
-

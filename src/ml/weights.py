@@ -5,7 +5,7 @@ import logging
 
 logger = logging.getLogger("Weights Util")
 
-def download_weights_s3(model_name: str, model_variant_name: str, download_dir: str) -> bool:
+def download_weights_s3(model_name: str, model_variant_name: str, download_dir: str) -> None:
     s3_bucket = os.environ.get('S3_ML_BUCKET', None)
     endpoint_url = os.environ.get('S3_ENDPOINT_URL', None)
     aws_access_key_id = os.environ.get('S3_ACCESS_KEY_ID', None)

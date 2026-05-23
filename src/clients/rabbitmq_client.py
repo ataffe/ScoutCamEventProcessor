@@ -2,12 +2,14 @@ import logging
 import pika
 import numpy as np
 import cv2
+from PIL import Image as PILImage
 from sqlalchemy.engine import Engine
 
 from src.db.rules import get_rules_by_id
 from src.ml.rules_model import RulesModel, RuleEvaluationInput
 
 logger = logging.getLogger("GuardianCamService_RabbitMQClient")
+
 
 def get_rabbitmq_connection(config_dict: dict, on_message_callback: callable):
     logger.info("Creating RabbitMQ connection")
@@ -24,28 +26,23 @@ def get_rabbitmq_connection(config_dict: dict, on_message_callback: callable):
     logger.info("Connection created listening for messages. To exit press CTRL+C")
     return conn, chan
 
-def on_message(ch,
-               method,
-               properties,
-               body: bytes,
-               rules_model: RulesModel,
-               sql_engine: Engine):
+
+def on_message(ch, method, properties, body: bytes, rules_model: RulesModel, sql_engine: Engine):
     camera_public_id = properties.headers.get('camera_public_id', None) if properties.headers else None
     rules = get_rules_by_id(camera_public_id, sql_engine) if camera_public_id else []
 
     if len(rules) > 0:
-        img = cv2.imdecode(np.frombuffer(body, np.uint8), cv2.IMREAD_COLOR)
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        logger.debug(f"Received image shape {img.shape}")
-        if img is None:
+        img_array = cv2.imdecode(np.frombuffer(body, np.uint8), cv2.IMREAD_COLOR)
+        if img_array is None:
             logger.error("Received empty image.")
-            ch.basic_ack(delivery_tag=method.delivery_tag)
         else:
+            img_array = cv2.cvtColor(img_array, cv2.COLOR_BGR2RGB)
+            logger.debug(f"Received image shape {img_array.shape}")
+            img = PILImage.fromarray(img_array)
             rules_eval_input = [RuleEvaluationInput.from_rule_entity(rule) for rule in rules]
-            results = rules_model.evaluate_rule(image=img, rules=rules_eval_input)
+            results = rules_model.evaluate_rules(rules=rules_eval_input, image=img)
             for result in results:
                 if result.is_triggered:
-                    print(f'Rule {result.rule_name} triggered.')
-        ch.basic_ack(delivery_tag = method.delivery_tag)
-    else:
-        ch.basic_ack(delivery_tag = method.delivery_tag)
+                    logger.info(f'Rule {result.rule_name} triggered.')
+
+    ch.basic_ack(delivery_tag=method.delivery_tag)
