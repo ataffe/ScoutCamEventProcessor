@@ -1,8 +1,14 @@
 import logging
+import os
+
 import yaml
-from queue.rabbitmq_client import get_rabbitmq_connection, on_message
-from src.ml.rules_model import GuardianCamRulesModel
 from functools import partial
+from queue.rabbitmq_client import get_rabbitmq_connection, on_message
+import time
+
+from src.ml.gemma4_rules_model import Gemma4RulesModel
+from src.db.engine import get_sql_engine
+
 
 logger = logging.getLogger("GuardianCamService")
 
@@ -29,9 +35,24 @@ def load_config(path: str) -> dict:
 if __name__ == '__main__':
     config = load_config('../config/config_dev.yaml')
     set_log_level(config['logging']['level'])
-    guardian_cam_rules_model = GuardianCamRulesModel(config['ml']['gemma-4-e2b-it'])
+
+    # Dev Environment
+    # Set S3 Credentials
+    if not os.environ.get('ENV', None):
+        os.environ['S3_ML_BUCKET'] = config['b2']['bucket_name']
+        os.environ['S3_ENDPOINT_URL'] = config['b2']['endpoint']
+        os.environ['S3_ACCESS_KEY_ID'] = config['b2']['access_key_id']
+        os.environ['S3_SECRET_ACCESS_KEY'] = config['b2']['application_key']
+
+    guardian_cam_rules_model = Gemma4RulesModel(
+        model_variant=config['ml']['model_variant_name'],
+        model_weights_dir=config['ml']['model_variant_version'])
+    logger.info("Initializing rules model.")
+    start = time.perf_counter()
     guardian_cam_rules_model.init()
-    callback = partial(on_message, rules_model=guardian_cam_rules_model)
+    logger.info('Initialized rules model in {:.2f} seconds.'.format(time.perf_counter() - start))
+    sql_engine = get_sql_engine()
+    callback = partial(on_message, rules_model=guardian_cam_rules_model, sql_engine=sql_engine)
     connection, channel = get_rabbitmq_connection(config, callback)
     try:
         channel.start_consuming()
