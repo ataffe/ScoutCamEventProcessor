@@ -14,10 +14,10 @@ db:
   port: 5432
   db_name: scoutcamservicedb
 ml:
-  model_variant_name: gemma-4-e2b-it
-  weights_dir: ml_weights
+  model_variant_name: gemma4-e2b-it
+  model_weights_dir: ml_weights
 b2:
   bucket_name: scout-cam-ml
-  endpoint: s3.us-west-004.backblazeb2.com
+  endpoint: https://s3.us-west-004.backblazeb2.com
   access_key_id: 0048eadf95920320000000008
   application_key: K004msLlgTUARG4pae2JKM0obnAULVE

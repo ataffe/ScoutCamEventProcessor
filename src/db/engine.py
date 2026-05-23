@@ -2,6 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 import yaml
 import os
+
 def get_sql_engine() -> Engine:
     config = {}
     env = os.environ.get('ENV')

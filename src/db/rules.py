@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.engine import Engine
+
 from src.db.entities import Rule
 
 def get_rules_by_id(camera_id: str, sql_engine: Engine) -> list[str]:

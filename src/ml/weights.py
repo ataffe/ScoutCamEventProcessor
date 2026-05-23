@@ -18,12 +18,18 @@ def download_weights_s3(model_name: str, model_variant_name: str, download_dir: 
         aws_access_key_id=aws_access_key_id,
         aws_secret_access_key=aws_secret_access_key,
     )
-    Path(download_dir).mkdir(parents=True, exist_ok=True)
+    download_dir = Path(download_dir)
+    download_dir.mkdir(parents=True, exist_ok=True)
     paginator = s3_client.get_paginator('list_objects_v2')
+    # gemma4-e2b-it
     for page in paginator.paginate(Bucket=s3_bucket, Prefix=f'{model_name}/{model_variant_name}/'):
         for obj in page.get('Contents', []):
             key = obj['Key']
             filename = Path(key).name
             logger.info(f'Downloading {filename}')
             s3_client.download_file(s3_bucket, key, f'{download_dir}/{filename}')
+
+    if not any(download_dir.iterdir()):
+        raise FileNotFoundError(f'No files found in {download_dir}')
+
 

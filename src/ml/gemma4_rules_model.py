@@ -4,8 +4,8 @@ from PIL import Image
 import logging
 from pathlib import Path
 
-from rules_model import RuleEvaluationResult, RuleEvaluationInput, RulesModel
-from weights import download_weights_s3
+from src.ml.rules_model import RuleEvaluationResult, RuleEvaluationInput, RulesModel
+from src.ml.weights import download_weights_s3
 logger = logging.getLogger("Guardian Cam Service Model")
 
 class Gemma4RulesModel(RulesModel):
@@ -18,8 +18,8 @@ class Gemma4RulesModel(RulesModel):
     def init(self):
         # f"google/gemma-4/transformers/{self.model_name}"
         model_path = self.weights_dir
-        if not Path(model_path).exists():
-            model_path = download_weights_s3('gemma4', self.variant, self.weights_dir)
+        if not Path(model_path).exists() or not any(Path(model_path).iterdir()):
+            download_weights_s3('gemma4', self.variant, self.weights_dir)
             logger.info(f"Model downloaded to {model_path}")
         self.model = AutoModelForCausalLM.from_pretrained(
             model_path,

@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from PIL import Image
 from dataclasses import dataclass
+
 from src.db.entities import Rule
 
 @dataclass

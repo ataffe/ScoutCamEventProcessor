@@ -3,12 +3,11 @@ import os
 
 import yaml
 from functools import partial
-from queue.rabbitmq_client import get_rabbitmq_connection, on_message
 import time
 
 from src.ml.gemma4_rules_model import Gemma4RulesModel
 from src.db.engine import get_sql_engine
-
+from src.clients.rabbitmq_client import get_rabbitmq_connection, on_message
 
 logger = logging.getLogger("GuardianCamService")
 
@@ -33,7 +32,7 @@ def load_config(path: str) -> dict:
         return yaml.safe_load(f)
 
 if __name__ == '__main__':
-    config = load_config('../config/config_dev.yaml')
+    config = load_config('config/config_dev.yaml')
     set_log_level(config['logging']['level'])
 
     # Dev Environment
@@ -46,7 +45,7 @@ if __name__ == '__main__':
 
     guardian_cam_rules_model = Gemma4RulesModel(
         model_variant=config['ml']['model_variant_name'],
-        model_weights_dir=config['ml']['model_variant_version'])
+        model_weights_dir=config['ml']['model_weights_dir'])
     logger.info("Initializing rules model.")
     start = time.perf_counter()
     guardian_cam_rules_model.init()
