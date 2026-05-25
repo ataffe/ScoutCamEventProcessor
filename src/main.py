@@ -13,6 +13,7 @@ logger = logging.getLogger("GuardianCamService")
 
 image_num = 0
 
+
 def set_log_level(level_str: str):
     logger_level = logging.INFO
     if level_str.lower() == 'debug':
@@ -27,9 +28,11 @@ def set_log_level(level_str: str):
         logger.error('Invalid log level, defaulting to info')
     logging.basicConfig(level=logger_level)
 
+
 def load_config(path: str) -> dict:
     with open(path, "r") as f:
         return yaml.safe_load(f)
+
 
 if __name__ == '__main__':
     config = load_config('config/config_dev.yaml')
@@ -49,9 +52,13 @@ if __name__ == '__main__':
     logger.info("Initializing rules model.")
     start = time.perf_counter()
     guardian_cam_rules_model.init()
-    logger.info('Initialized rules model in {:.2f} seconds.'.format(time.perf_counter() - start))
+    elapsed = time.perf_counter() - start
+    logger.info('Initialized rules model in {:.2f} seconds.'.format(elapsed))
     sql_engine = get_sql_engine()
-    callback = partial(on_message, rules_model=guardian_cam_rules_model, sql_engine=sql_engine)
+    callback = partial(
+        on_message,
+        rules_model=guardian_cam_rules_model,
+        sql_engine=sql_engine)
     connection, channel = get_rabbitmq_connection(config, callback)
     try:
         channel.start_consuming()
