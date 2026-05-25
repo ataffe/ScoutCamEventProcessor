@@ -6,7 +6,18 @@ rabbitmq:
 logging:
   level: INFO
 db:
-  user: alex
+  user: appuser
+  password: lYr3KCPu6QFr8W9KHcRF7gAK2Wfp
+  db_dialect: postgresql
+  dbapi: psycopg
   host: localhost
   port: 5432
-  db_name: guardian_cam_rules
+  db_name: scoutcamservicedb
+ml:
+  model_variant_name: gemma4-e2b-it
+  model_weights_dir: ml_weights
+b2:
+  bucket_name: scout-cam-ml
+  endpoint: https://s3.us-west-004.backblazeb2.com
+  access_key_id: 0048eadf95920320000000008
+  application_key: K004msLlgTUARG4pae2JKM0obnAULVE

@@ -1,10 +1,13 @@
 import logging
-import numpy as np
-import cv2
+import os
+
 import yaml
-from rabbitmq_client import get_rabbitmq_connection
-from src.ml.rules_model import GuardianCamRulesModel
 from functools import partial
+import time
+
+from src.ml.gemma4_rules_model import Gemma4RulesModel
+from src.db.engine import get_sql_engine
+from src.clients.rabbitmq_client import get_rabbitmq_connection, on_message
 
 logger = logging.getLogger("GuardianCamService")
 
@@ -28,31 +31,27 @@ def load_config(path: str) -> dict:
     with open(path, "r") as f:
         return yaml.safe_load(f)
 
-def on_message(ch, method, properties, body: bytes, rules_model: GuardianCamRulesModel):
-    img = cv2.imdecode(np.frombuffer(body, np.uint8), cv2.IMREAD_COLOR)
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    logger.debug(f"Received image shape {img.shape}")
-    if img is None:
-        logger.error("Received empty image.")
-        ch.basic_ack(delivery_tag=method.delivery_tag)
-    else:
-        test_rule = "a hand is visible"
-        if rules_model.evaluate_rule(image=img, rule=test_rule):
-            cv2.imwrite('last_recieved.jpg', img)
-            logger.info("Rule triggered, image saved.")
-        else:
-            logger.info("Rule not triggered")
-    ch.basic_ack(delivery_tag = method.delivery_tag)
-
-
-
-
 if __name__ == '__main__':
-    config = load_config('../config/config_dev.yaml')
+    config = load_config('config/config_dev.yaml')
     set_log_level(config['logging']['level'])
-    guardian_cam_rules_model = GuardianCamRulesModel("gemma-4-e2b-it")
+
+    # Dev Environment
+    # Set S3 Credentials
+    if not os.environ.get('ENV', None):
+        os.environ['S3_ML_BUCKET'] = config['b2']['bucket_name']
+        os.environ['S3_ENDPOINT_URL'] = config['b2']['endpoint']
+        os.environ['S3_ACCESS_KEY_ID'] = config['b2']['access_key_id']
+        os.environ['S3_SECRET_ACCESS_KEY'] = config['b2']['application_key']
+
+    guardian_cam_rules_model = Gemma4RulesModel(
+        model_variant=config['ml']['model_variant_name'],
+        model_weights_dir=config['ml']['model_weights_dir'])
+    logger.info("Initializing rules model.")
+    start = time.perf_counter()
     guardian_cam_rules_model.init()
-    callback = partial(on_message, rules_model=guardian_cam_rules_model)
+    logger.info('Initialized rules model in {:.2f} seconds.'.format(time.perf_counter() - start))
+    sql_engine = get_sql_engine()
+    callback = partial(on_message, rules_model=guardian_cam_rules_model, sql_engine=sql_engine)
     connection, channel = get_rabbitmq_connection(config, callback)
     try:
         channel.start_consuming()
