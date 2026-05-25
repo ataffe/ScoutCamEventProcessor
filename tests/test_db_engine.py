@@ -18,7 +18,8 @@ MOCK_DB_CONFIG = {
 
 
 def test_engine_url_built_from_config():
-    with patch('builtins.open', mock_open()), \
+    with patch('src.db.engine.Path.is_file', return_value=True), \
+         patch('builtins.open', mock_open()), \
          patch('yaml.safe_load', return_value=MOCK_DB_CONFIG):
         engine = get_sql_engine()
     url = engine.url
@@ -31,6 +32,7 @@ def test_engine_url_built_from_config():
 
 def test_uses_dev_config_by_default():
     with patch.dict(os.environ, {'ENV': ''}), \
+         patch('src.db.engine.Path.is_file', return_value=True), \
          patch('builtins.open', mock_open()) as mock_file, \
          patch('yaml.safe_load', return_value=MOCK_DB_CONFIG):
         get_sql_engine()
@@ -39,7 +41,18 @@ def test_uses_dev_config_by_default():
 
 def test_uses_env_specific_config_when_env_var_set():
     with patch.dict(os.environ, {'ENV': 'prod'}), \
+         patch('src.db.engine.Path.is_file', return_value=True), \
          patch('builtins.open', mock_open()) as mock_file, \
          patch('yaml.safe_load', return_value=MOCK_DB_CONFIG):
         get_sql_engine()
     mock_file.assert_called_once_with('config/config_prod.yaml', 'r')
+
+
+def test_raises_if_config_file_missing():
+    with patch('src.db.engine.Path.is_file', return_value=False), \
+         patch.dict(os.environ, {'ENV': 'prod'}):
+        try:
+            get_sql_engine()
+            assert False, 'Expected FileNotFoundError'
+        except FileNotFoundError as e:
+            assert 'config_prod.yaml' in str(e)
