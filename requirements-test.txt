@@ -6,6 +6,7 @@ Pillow==12.2.0
 pytest==9.0.3
 PyYAML==6.0.3
 SQLAlchemy==2.0.50
-torch==2.11.0
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.11.0+cpu
 transformers==5.5.0
 psycopg==3.3.3
