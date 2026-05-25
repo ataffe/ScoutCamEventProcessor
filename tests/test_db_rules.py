@@ -23,16 +23,20 @@ def engine():
 @pytest.fixture
 def populated_db(engine):
     with Session(engine) as session:
-        camera1 = Camera(id=1, public_camera_id=CAMERA_1_PUBLIC_ID, owner_id=1,
-                         location="Front Door", created_at=datetime.now(timezone.utc))
-        camera2 = Camera(id=2, public_camera_id=CAMERA_2_PUBLIC_ID, owner_id=1,
-                         location="Back Door", created_at=datetime.now(timezone.utc))
+        camera1 = Camera(
+            id=1, public_camera_id=CAMERA_1_PUBLIC_ID, owner_id=1,
+            location="Front Door", created_at=datetime.now(timezone.utc))
+        camera2 = Camera(
+            id=2, public_camera_id=CAMERA_2_PUBLIC_ID, owner_id=1,
+            location="Back Door", created_at=datetime.now(timezone.utc))
         rules = [
             Rule(id=1, public_rule_id=uuid4(), owner_id=1, camera_id=1,
-                 rule="a person is present", rule_nickname="Person Detection",
+                 rule="a person is present",
+                 rule_nickname="Person Detection",
                  is_enabled=True, created_at=datetime.now(timezone.utc)),
             Rule(id=2, public_rule_id=uuid4(), owner_id=1, camera_id=1,
-                 rule="a vehicle is present", rule_nickname="Vehicle Detection",
+                 rule="a vehicle is present",
+                 rule_nickname="Vehicle Detection",
                  is_enabled=True, created_at=datetime.now(timezone.utc)),
             Rule(id=3, public_rule_id=uuid4(), owner_id=1, camera_id=2,
                  rule="a dog is present", rule_nickname="Dog Detection",
@@ -72,8 +76,9 @@ def test_returns_empty_list_for_unknown_camera_id(populated_db):
 
 def test_returns_empty_list_when_camera_has_no_rules(engine):
     with Session(engine) as session:
-        camera = Camera(id=1, public_camera_id=CAMERA_1_PUBLIC_ID, owner_id=1,
-                        location="Front Door", created_at=datetime.now(timezone.utc))
+        camera = Camera(
+            id=1, public_camera_id=CAMERA_1_PUBLIC_ID, owner_id=1,
+            location="Front Door", created_at=datetime.now(timezone.utc))
         session.add(camera)
         session.commit()
     rules = get_rules_by_id(str(CAMERA_1_PUBLIC_ID), engine)

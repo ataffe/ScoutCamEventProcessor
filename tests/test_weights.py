@@ -13,7 +13,9 @@ S3_ENV = {
     'S3_SECRET_ACCESS_KEY': 'test-secret',
 }
 
-ONE_FILE_PAGE = [{'Contents': [{'Key': 'gemma4/test-variant/model.safetensors'}]}]
+ONE_FILE_PAGE = [
+    {'Contents': [{'Key': 'gemma4/test-variant/model.safetensors'}]}
+]
 
 
 def _make_file_on_download(bucket, key, dest):
@@ -26,7 +28,8 @@ def test_creates_s3_client_with_credentials_from_env(tmp_path):
     with patch.dict(os.environ, S3_ENV), \
          patch('boto3.client') as mock_boto3:
         mock_s3 = mock_boto3.return_value
-        mock_s3.get_paginator.return_value.paginate.return_value = ONE_FILE_PAGE
+        paginator = mock_s3.get_paginator.return_value
+        paginator.paginate.return_value = ONE_FILE_PAGE
         mock_s3.download_file.side_effect = _make_file_on_download
         download_weights_s3('gemma4', 'test-variant', str(tmp_path))
     mock_boto3.assert_called_once_with(
@@ -71,7 +74,8 @@ def test_downloads_file_to_correct_destination(tmp_path):
     with patch.dict(os.environ, S3_ENV), \
          patch('boto3.client') as mock_boto3:
         mock_s3 = mock_boto3.return_value
-        mock_s3.get_paginator.return_value.paginate.return_value = ONE_FILE_PAGE
+        paginator = mock_s3.get_paginator.return_value
+        paginator.paginate.return_value = ONE_FILE_PAGE
         mock_s3.download_file.side_effect = _make_file_on_download
         download_weights_s3('gemma4', 'test-variant', str(tmp_path))
     mock_s3.download_file.assert_called_once_with(
@@ -86,7 +90,8 @@ def test_creates_download_directory_if_it_does_not_exist(tmp_path):
     with patch.dict(os.environ, S3_ENV), \
          patch('boto3.client') as mock_boto3:
         mock_s3 = mock_boto3.return_value
-        mock_s3.get_paginator.return_value.paginate.return_value = ONE_FILE_PAGE
+        paginator = mock_s3.get_paginator.return_value
+        paginator.paginate.return_value = ONE_FILE_PAGE
         mock_s3.download_file.side_effect = _make_file_on_download
         download_weights_s3('gemma4', 'test-variant', str(weights_dir))
     assert weights_dir.exists()
@@ -97,7 +102,8 @@ def test_creates_download_directory_if_it_does_not_exist(tmp_path):
 def test_raises_file_not_found_when_page_has_no_contents(tmp_path):
     with patch.dict(os.environ, S3_ENV), \
          patch('boto3.client') as mock_boto3:
-        mock_boto3.return_value.get_paginator.return_value.paginate.return_value = [{'Contents': []}]
+        mock_boto3.return_value.get_paginator.return_value \
+            .paginate.return_value = [{'Contents': []}]
         with pytest.raises(FileNotFoundError):
             download_weights_s3('gemma4', 'test-variant', str(tmp_path))
 
@@ -105,6 +111,7 @@ def test_raises_file_not_found_when_page_has_no_contents(tmp_path):
 def test_raises_file_not_found_when_no_pages_returned(tmp_path):
     with patch.dict(os.environ, S3_ENV), \
          patch('boto3.client') as mock_boto3:
-        mock_boto3.return_value.get_paginator.return_value.paginate.return_value = []
+        mock_boto3.return_value.get_paginator.return_value \
+            .paginate.return_value = []
         with pytest.raises(FileNotFoundError):
             download_weights_s3('gemma4', 'test-variant', str(tmp_path))

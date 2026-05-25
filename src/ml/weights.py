@@ -5,12 +5,14 @@ import logging
 
 logger = logging.getLogger("Weights Util")
 
-def download_weights_s3(model_name: str, model_variant_name: str, download_dir: str) -> None:
+
+def download_weights_s3(
+        model_name: str, model_variant_name: str,
+        download_dir: str) -> None:
     s3_bucket = os.environ.get('S3_ML_BUCKET', None)
     endpoint_url = os.environ.get('S3_ENDPOINT_URL', None)
     aws_access_key_id = os.environ.get('S3_ACCESS_KEY_ID', None)
     aws_secret_access_key = os.environ.get('S3_SECRET_ACCESS_KEY', None)
-
 
     s3_client = boto3.client(
         service_name='s3',
@@ -21,15 +23,14 @@ def download_weights_s3(model_name: str, model_variant_name: str, download_dir: 
     download_dir = Path(download_dir)
     download_dir.mkdir(parents=True, exist_ok=True)
     paginator = s3_client.get_paginator('list_objects_v2')
-    # gemma4-e2b-it
-    for page in paginator.paginate(Bucket=s3_bucket, Prefix=f'{model_name}/{model_variant_name}/'):
+    prefix = f'{model_name}/{model_variant_name}/'
+    for page in paginator.paginate(Bucket=s3_bucket, Prefix=prefix):
         for obj in page.get('Contents', []):
             key = obj['Key']
             filename = Path(key).name
             logger.info(f'Downloading {filename}')
-            s3_client.download_file(s3_bucket, key, f'{download_dir}/{filename}')
+            dest = f'{download_dir}/{filename}'
+            s3_client.download_file(s3_bucket, key, dest)
 
     if not any(download_dir.iterdir()):
         raise FileNotFoundError(f'No files found in {download_dir}')
-
-

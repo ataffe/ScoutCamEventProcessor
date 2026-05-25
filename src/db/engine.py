@@ -4,6 +4,7 @@ from pathlib import Path
 import yaml
 import os
 
+
 def get_sql_engine() -> Engine:
     config = {}
     env = os.environ.get('ENV')
@@ -14,8 +15,10 @@ def get_sql_engine() -> Engine:
 
     with open(str(config_path), 'r') as yaml_file:
         config = yaml.safe_load(yaml_file)
-    database_config = config['db']
-    return create_engine(
-        f'{database_config['db_dialect']}+{database_config['dbapi']}://' +
-        f'{database_config['user']}:{database_config['password']}'+
-        f'@{database_config['host']}:{database_config['port']}/{database_config["db_name"]}')
+    db = config['db']
+    url = (
+        f'{db["db_dialect"]}+{db["dbapi"]}://'
+        f'{db["user"]}:{db["password"]}'
+        f'@{db["host"]}:{db["port"]}/{db["db_name"]}'
+    )
+    return create_engine(url)

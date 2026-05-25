@@ -69,16 +69,18 @@ def sample_rule():
 # --- get_rabbitmq_connection ---
 
 def test_connection_uses_host_and_port_from_config():
-    with patch('src.clients.rabbitmq_client.pika.BlockingConnection') as mock_conn_cls:
+    with patch(
+            'src.clients.rabbitmq_client.pika.BlockingConnection') as mock_cls:
         get_rabbitmq_connection(RABBITMQ_CONFIG, MagicMock())
-    params = mock_conn_cls.call_args[0][0]
+    params = mock_cls.call_args[0][0]
     assert params.host == 'localhost'
     assert params.port == 5672
 
 
 def test_declares_queue_with_config_settings():
-    with patch('src.clients.rabbitmq_client.pika.BlockingConnection') as mock_conn_cls:
-        mock_chan = mock_conn_cls.return_value.channel.return_value
+    with patch(
+            'src.clients.rabbitmq_client.pika.BlockingConnection') as mock_cls:
+        mock_chan = mock_cls.return_value.channel.return_value
         get_rabbitmq_connection(RABBITMQ_CONFIG, MagicMock())
     mock_chan.queue_declare.assert_called_once_with(
         queue='test_queue',
@@ -88,8 +90,9 @@ def test_declares_queue_with_config_settings():
 
 
 def test_registers_callback_on_queue():
-    with patch('src.clients.rabbitmq_client.pika.BlockingConnection') as mock_conn_cls:
-        mock_chan = mock_conn_cls.return_value.channel.return_value
+    with patch(
+            'src.clients.rabbitmq_client.pika.BlockingConnection') as mock_cls:
+        mock_chan = mock_cls.return_value.channel.return_value
         callback = MagicMock()
         get_rabbitmq_connection(RABBITMQ_CONFIG, callback)
     mock_chan.basic_consume.assert_called_once_with(
@@ -99,8 +102,9 @@ def test_registers_callback_on_queue():
 
 
 def test_returns_connection_and_channel():
-    with patch('src.clients.rabbitmq_client.pika.BlockingConnection') as mock_conn_cls:
-        mock_conn = mock_conn_cls.return_value
+    with patch(
+            'src.clients.rabbitmq_client.pika.BlockingConnection') as mock_cls:
+        mock_conn = mock_cls.return_value
         mock_chan = mock_conn.channel.return_value
         conn, chan = get_rabbitmq_connection(RABBITMQ_CONFIG, MagicMock())
     assert conn is mock_conn
@@ -114,8 +118,11 @@ def test_acks_message_when_no_camera_id_in_headers(
     props = MagicMock()
     props.headers = {}
     with patch('src.clients.rabbitmq_client.get_rules_by_id'):
-        on_message(mock_channel, mock_method, props, b'', mock_rules_model, mock_sql_engine)
-    mock_channel.basic_ack.assert_called_once_with(delivery_tag=mock_method.delivery_tag)
+        on_message(
+            mock_channel, mock_method, props, b'',
+            mock_rules_model, mock_sql_engine)
+    mock_channel.basic_ack.assert_called_once_with(
+        delivery_tag=mock_method.delivery_tag)
 
 
 def test_acks_message_when_headers_is_none(
@@ -123,33 +130,46 @@ def test_acks_message_when_headers_is_none(
     props = MagicMock()
     props.headers = None
     with patch('src.clients.rabbitmq_client.get_rules_by_id'):
-        on_message(mock_channel, mock_method, props, b'', mock_rules_model, mock_sql_engine)
-    mock_channel.basic_ack.assert_called_once_with(delivery_tag=mock_method.delivery_tag)
+        on_message(
+            mock_channel, mock_method, props, b'',
+            mock_rules_model, mock_sql_engine)
+    mock_channel.basic_ack.assert_called_once_with(
+        delivery_tag=mock_method.delivery_tag)
 
 
 def test_acks_message_when_no_rules_found(
-        mock_channel, mock_method, mock_properties, mock_rules_model, mock_sql_engine):
+        mock_channel, mock_method, mock_properties,
+        mock_rules_model, mock_sql_engine):
     with patch('src.clients.rabbitmq_client.get_rules_by_id', return_value=[]):
-        on_message(mock_channel, mock_method, mock_properties, b'', mock_rules_model, mock_sql_engine)
-    mock_channel.basic_ack.assert_called_once_with(delivery_tag=mock_method.delivery_tag)
+        on_message(
+            mock_channel, mock_method, mock_properties, b'',
+            mock_rules_model, mock_sql_engine)
+    mock_channel.basic_ack.assert_called_once_with(
+        delivery_tag=mock_method.delivery_tag)
 
 
 def test_acks_message_after_processing_valid_image(
         mock_channel, mock_method, mock_properties, mock_rules_model,
         mock_sql_engine, sample_rule, valid_jpeg_bytes):
-    with patch('src.clients.rabbitmq_client.get_rules_by_id', return_value=[sample_rule]):
-        on_message(mock_channel, mock_method, mock_properties, valid_jpeg_bytes,
-                   mock_rules_model, mock_sql_engine)
-    mock_channel.basic_ack.assert_called_once_with(delivery_tag=mock_method.delivery_tag)
+    with patch('src.clients.rabbitmq_client.get_rules_by_id',
+               return_value=[sample_rule]):
+        on_message(
+            mock_channel, mock_method, mock_properties, valid_jpeg_bytes,
+            mock_rules_model, mock_sql_engine)
+    mock_channel.basic_ack.assert_called_once_with(
+        delivery_tag=mock_method.delivery_tag)
 
 
 def test_acks_message_when_image_bytes_are_corrupt(
         mock_channel, mock_method, mock_properties, mock_rules_model,
         mock_sql_engine, sample_rule):
-    with patch('src.clients.rabbitmq_client.get_rules_by_id', return_value=[sample_rule]):
-        on_message(mock_channel, mock_method, mock_properties, b'not_an_image',
-                   mock_rules_model, mock_sql_engine)
-    mock_channel.basic_ack.assert_called_once_with(delivery_tag=mock_method.delivery_tag)
+    with patch('src.clients.rabbitmq_client.get_rules_by_id',
+               return_value=[sample_rule]):
+        on_message(
+            mock_channel, mock_method, mock_properties, b'not_an_image',
+            mock_rules_model, mock_sql_engine)
+    mock_channel.basic_ack.assert_called_once_with(
+        delivery_tag=mock_method.delivery_tag)
 
 
 # --- on_message: DB lookup ---
@@ -158,9 +178,11 @@ def test_does_not_query_db_when_no_camera_id(
         mock_channel, mock_method, mock_rules_model, mock_sql_engine):
     props = MagicMock()
     props.headers = {}
-    with patch('src.clients.rabbitmq_client.get_rules_by_id') as mock_get_rules:
-        on_message(mock_channel, mock_method, props, b'', mock_rules_model, mock_sql_engine)
-    mock_get_rules.assert_not_called()
+    with patch('src.clients.rabbitmq_client.get_rules_by_id') as mock_get:
+        on_message(
+            mock_channel, mock_method, props, b'',
+            mock_rules_model, mock_sql_engine)
+    mock_get.assert_not_called()
 
 
 def test_queries_db_with_camera_id_from_header(
@@ -168,9 +190,12 @@ def test_queries_db_with_camera_id_from_header(
     camera_id = str(uuid4())
     props = MagicMock()
     props.headers = {'camera_public_id': camera_id}
-    with patch('src.clients.rabbitmq_client.get_rules_by_id', return_value=[]) as mock_get_rules:
-        on_message(mock_channel, mock_method, props, b'', mock_rules_model, mock_sql_engine)
-    mock_get_rules.assert_called_once_with(camera_id, mock_sql_engine)
+    with patch('src.clients.rabbitmq_client.get_rules_by_id',
+               return_value=[]) as mock_get:
+        on_message(
+            mock_channel, mock_method, props, b'',
+            mock_rules_model, mock_sql_engine)
+    mock_get.assert_called_once_with(camera_id, mock_sql_engine)
 
 
 # --- on_message: model evaluation ---
@@ -180,41 +205,52 @@ def test_does_not_evaluate_rules_when_no_camera_id(
     props = MagicMock()
     props.headers = {}
     with patch('src.clients.rabbitmq_client.get_rules_by_id'):
-        on_message(mock_channel, mock_method, props, b'', mock_rules_model, mock_sql_engine)
+        on_message(
+            mock_channel, mock_method, props, b'',
+            mock_rules_model, mock_sql_engine)
     mock_rules_model.evaluate_rules.assert_not_called()
 
 
 def test_does_not_evaluate_rules_when_no_rules_found(
-        mock_channel, mock_method, mock_properties, mock_rules_model, mock_sql_engine):
+        mock_channel, mock_method, mock_properties,
+        mock_rules_model, mock_sql_engine):
     with patch('src.clients.rabbitmq_client.get_rules_by_id', return_value=[]):
-        on_message(mock_channel, mock_method, mock_properties, b'', mock_rules_model, mock_sql_engine)
+        on_message(
+            mock_channel, mock_method, mock_properties, b'',
+            mock_rules_model, mock_sql_engine)
     mock_rules_model.evaluate_rules.assert_not_called()
 
 
 def test_does_not_evaluate_rules_when_image_is_corrupt(
         mock_channel, mock_method, mock_properties, mock_rules_model,
         mock_sql_engine, sample_rule):
-    with patch('src.clients.rabbitmq_client.get_rules_by_id', return_value=[sample_rule]):
-        on_message(mock_channel, mock_method, mock_properties, b'not_an_image',
-                   mock_rules_model, mock_sql_engine)
+    with patch('src.clients.rabbitmq_client.get_rules_by_id',
+               return_value=[sample_rule]):
+        on_message(
+            mock_channel, mock_method, mock_properties, b'not_an_image',
+            mock_rules_model, mock_sql_engine)
     mock_rules_model.evaluate_rules.assert_not_called()
 
 
 def test_evaluates_rules_when_rules_and_valid_image_exist(
         mock_channel, mock_method, mock_properties, mock_rules_model,
         mock_sql_engine, sample_rule, valid_jpeg_bytes):
-    with patch('src.clients.rabbitmq_client.get_rules_by_id', return_value=[sample_rule]):
-        on_message(mock_channel, mock_method, mock_properties, valid_jpeg_bytes,
-                   mock_rules_model, mock_sql_engine)
+    with patch('src.clients.rabbitmq_client.get_rules_by_id',
+               return_value=[sample_rule]):
+        on_message(
+            mock_channel, mock_method, mock_properties, valid_jpeg_bytes,
+            mock_rules_model, mock_sql_engine)
     mock_rules_model.evaluate_rules.assert_called_once()
 
 
 def test_passes_pil_image_to_model(
         mock_channel, mock_method, mock_properties, mock_rules_model,
         mock_sql_engine, sample_rule, valid_jpeg_bytes):
-    with patch('src.clients.rabbitmq_client.get_rules_by_id', return_value=[sample_rule]):
-        on_message(mock_channel, mock_method, mock_properties, valid_jpeg_bytes,
-                   mock_rules_model, mock_sql_engine)
+    with patch('src.clients.rabbitmq_client.get_rules_by_id',
+               return_value=[sample_rule]):
+        on_message(
+            mock_channel, mock_method, mock_properties, valid_jpeg_bytes,
+            mock_rules_model, mock_sql_engine)
     image_arg = mock_rules_model.evaluate_rules.call_args.kwargs['image']
     assert isinstance(image_arg, Image.Image)
 
@@ -222,9 +258,11 @@ def test_passes_pil_image_to_model(
 def test_passes_rule_evaluation_inputs_built_from_rules(
         mock_channel, mock_method, mock_properties, mock_rules_model,
         mock_sql_engine, sample_rule, valid_jpeg_bytes):
-    with patch('src.clients.rabbitmq_client.get_rules_by_id', return_value=[sample_rule]):
-        on_message(mock_channel, mock_method, mock_properties, valid_jpeg_bytes,
-                   mock_rules_model, mock_sql_engine)
+    with patch('src.clients.rabbitmq_client.get_rules_by_id',
+               return_value=[sample_rule]):
+        on_message(
+            mock_channel, mock_method, mock_properties, valid_jpeg_bytes,
+            mock_rules_model, mock_sql_engine)
     rules_arg = mock_rules_model.evaluate_rules.call_args.kwargs['rules']
     assert len(rules_arg) == 1
     assert rules_arg[0].rule == sample_rule.rule
@@ -243,10 +281,12 @@ def test_logs_triggered_rule(
     )
     model = MagicMock()
     model.evaluate_rules.return_value = [result]
-    with patch('src.clients.rabbitmq_client.get_rules_by_id', return_value=[sample_rule]), \
+    with patch('src.clients.rabbitmq_client.get_rules_by_id',
+               return_value=[sample_rule]), \
          patch('src.clients.rabbitmq_client.logger') as mock_logger:
-        on_message(mock_channel, mock_method, mock_properties, valid_jpeg_bytes,
-                   model, mock_sql_engine)
+        on_message(
+            mock_channel, mock_method, mock_properties, valid_jpeg_bytes,
+            model, mock_sql_engine)
     mock_logger.info.assert_any_call('Rule Person Detection triggered.')
 
 
@@ -260,8 +300,10 @@ def test_does_not_log_untriggered_rule(
     )
     model = MagicMock()
     model.evaluate_rules.return_value = [result]
-    with patch('src.clients.rabbitmq_client.get_rules_by_id', return_value=[sample_rule]), \
+    with patch('src.clients.rabbitmq_client.get_rules_by_id',
+               return_value=[sample_rule]), \
          patch('src.clients.rabbitmq_client.logger') as mock_logger:
-        on_message(mock_channel, mock_method, mock_properties, valid_jpeg_bytes,
-                   model, mock_sql_engine)
+        on_message(
+            mock_channel, mock_method, mock_properties, valid_jpeg_bytes,
+            model, mock_sql_engine)
     mock_logger.info.assert_not_called()

@@ -1,4 +1,3 @@
-import pytest
 from unittest.mock import MagicMock
 from uuid import uuid4
 
@@ -8,21 +7,28 @@ from src.ml.rules_model import RuleEvaluationResult, RuleEvaluationInput
 # --- RuleEvaluationResult ---
 
 def test_result_stores_all_fields():
-    result = RuleEvaluationResult(rule_public_id='abc-123', rule_name='Person Detection', is_triggered=True)
+    result = RuleEvaluationResult(
+        rule_public_id='abc-123',
+        rule_name='Person Detection',
+        is_triggered=True)
     assert result.rule_public_id == 'abc-123'
     assert result.rule_name == 'Person Detection'
     assert result.is_triggered is True
 
 
 def test_result_is_triggered_can_be_false():
-    result = RuleEvaluationResult(rule_public_id='abc', rule_name='Test', is_triggered=False)
+    result = RuleEvaluationResult(
+        rule_public_id='abc', rule_name='Test', is_triggered=False)
     assert result.is_triggered is False
 
 
 # --- RuleEvaluationInput ---
 
 def test_input_stores_all_fields():
-    inp = RuleEvaluationInput(rule_public_id='123', rule_name='Person Detection', rule='a person is present')
+    inp = RuleEvaluationInput(
+        rule_public_id='123',
+        rule_name='Person Detection',
+        rule='a person is present')
     assert inp.rule_public_id == '123'
     assert inp.rule_name == 'Person Detection'
     assert inp.rule == 'a person is present'
